@@ -1,4 +1,6 @@
-﻿using Core.Entities;
+﻿using API.Dtos;
+using AutoMapper;
+using Core.Entities;
 using Core.Interfaces;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -9,60 +11,73 @@ namespace API.Controllers;
 public class ProductosController : BaseApiController
 {
     private readonly IUnitOfWork _unitOfWork;
-    public ProductosController(IUnitOfWork unitOfWork)
+    private readonly IMapper _mapper;
+
+    public ProductosController(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IEnumerable<Producto>>> Get()
+    public async Task<ActionResult<IEnumerable<ProductoListDto>>> Get()
     {
         var productos = await _unitOfWork.Productos.GetAllAsync();
-        return Ok(productos);
+        return _mapper.Map<List<ProductoListDto>>(productos);
     }
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IEnumerable<Producto>>> Get(int id)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ProductoDto>> Get(int id)
     {
         var productos = await _unitOfWork.Productos.GetByIdAsync(id);
-        return Ok(productos);
+
+        if (productos == null)
+        {
+            return NotFound();
+        }
+        return _mapper.Map<ProductoDto>(productos);
     }
 
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<Producto>> Post(Producto producto)
+    public async Task<ActionResult<Producto>> Post(ProductoAddUpdateDto productoDto)
     {
-        if (producto == null)
+        if (productoDto == null)
         {
             return BadRequest();
         }
 
-        _unitOfWork.Productos.Add(producto);
-        _unitOfWork.Save();
+        var producto = _mapper.Map<Producto>(productoDto);
 
-        return CreatedAtAction(nameof(Post), new { id = producto.Id }, producto);
+        _unitOfWork.Productos.Add(producto);
+        await _unitOfWork.SaveAsync();
+        productoDto.Id = producto.Id;
+
+        return CreatedAtAction(nameof(Post), new { id = productoDto.Id }, productoDto);
     }
 
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Producto>> Put(int id, [FromBody] Producto producto)
+    public async Task<ActionResult<ProductoAddUpdateDto>> Put(int id, [FromBody] ProductoAddUpdateDto productoDto)
     {
-        if (producto == null)
+        if (productoDto == null)
         {
             return NotFound();
         }
 
+        var producto = _mapper.Map<Producto>(productoDto);
         _unitOfWork.Productos.Update(producto);
-        _unitOfWork.Save();
+        await _unitOfWork.SaveAsync();
 
-        return Ok(producto);
+        return productoDto;
     }
 
     [HttpDelete("{id}")]
@@ -78,7 +93,7 @@ public class ProductosController : BaseApiController
         }
 
         _unitOfWork.Productos.Remove(producto);
-        _unitOfWork.Save();
+        await _unitOfWork.SaveAsync();
 
         return NoContent();
     }
