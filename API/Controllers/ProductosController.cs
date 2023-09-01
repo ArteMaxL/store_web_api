@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
+[ApiVersion("1.0")]
+[ApiVersion("1.1")]
 public class ProductosController : BaseApiController
 {
     private readonly IUnitOfWork _unitOfWork;
@@ -19,13 +21,23 @@ public class ProductosController : BaseApiController
         _mapper = mapper;
     }
 
-    [HttpGet]
+    [HttpGet]    
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<ProductoListDto>>> Get()
     {
         var productos = await _unitOfWork.Productos.GetAllAsync();
         return _mapper.Map<List<ProductoListDto>>(productos);
+    }
+
+    [HttpGet]
+    [MapToApiVersion("1.1")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IEnumerable<ProductoDto>>> Get11()
+    {
+        var productos = await _unitOfWork.Productos.GetAllAsync();
+        return _mapper.Map<List<ProductoDto>>(productos);
     }
 
     [HttpGet("{id:int}")]

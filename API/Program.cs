@@ -11,6 +11,7 @@ builder.Services.AddAutoMapper(Assembly.GetEntryAssembly());
 builder.Services.ConfigureRateLimiting();
 builder.Services.ConfigureCors();
 builder.Services.AddApplicationServices();
+builder.Services.ConfigureApiVersioning();
 
 builder.Services.AddControllers();
 
